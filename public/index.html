@@ -2,68 +2,218 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Mail System Homepage</title>
+  <title>Easy Postal Services</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #c9d6ff, #e2e2e2);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f8f9fa;
+      color: #333;
+      position: relative;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .watermark {
+      position: absolute;
+      top: 0;
+      left: 0;
+      background-image: url('image/logo.jpg');
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: cover;
+      opacity: 0.12; /* 調整透明度 */
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .overlay {
+      z-index: 1;
+      background-color: rgba(255, 255, 255, 0.5); /* 適中透明度 */
+      min-height: 100vh;
+    }
+
+    .header {
       display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+      justify-content: flex-end;
+      padding: 20px 40px 0 0;
+    }
+
+    .admin-link {
+      font-size: 0.85rem;
+      text-decoration: none;
+      color: #007BFF;
+      transition: color 0.2s;
+    }
+
+    .admin-link:hover {
+      color: #0056b3;
     }
 
     .container {
-      background: #fff;
-      padding: 40px;
-      border-radius: 12px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+
       text-align: center;
-      width: 350px;
+      padding: 100px 20px 60px;
+      max-width: 800px;
+      margin: auto;
+      flex: 1;
     }
 
     h1 {
-      color: #333;
-      margin-bottom: 30px;
+      font-size: 2.8rem;
+      margin-bottom: 20px;
     }
 
-    .btn {
-      display: block;
-      width: 100%;
-      padding: 12px;
-      margin: 10px 0;
-      border: none;
-      border-radius: 8px;
+    p {
+      font-size: 1.2rem;
+      margin-bottom: 40px;
+    }
+
+    .login-button {
+      padding: 14px 30px;
+      font-size: 1rem;
       background-color: #007BFF;
       color: white;
-      font-size: 16px;
+      border: none;
+      border-radius: 6px;
       cursor: pointer;
-      transition: background 0.3s;
-      text-decoration: none;
+      transition: background-color 0.3s;
     }
 
-    .btn:hover {
+    .login-button:hover {
       background-color: #0056b3;
     }
 
-    .footer {
-      margin-top: 30px;
-      font-size: 12px;
-      color: #888;
+    footer {
+      background-color: #343a40;
+      color: #f8f9fa;
+      padding: 30px 20px;
+      font-size: 0.9rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
     }
+
+    .footer-section {
+      flex: 1;
+      min-width: 250px;
+      margin: 10px;
+    }
+
+    .footer-section h3 {
+      margin-bottom: 10px;
+      font-size: 1rem;
+      border-bottom: 1px solid #555;
+      padding-bottom: 5px;
+    }
+
+    .footer-section p {
+      margin: 5px 0;
+    }
+	
+	.footer-section {
+	flex: 1;
+	min-width: 250px;
+	margin: 10px;
+	}
+
+	.footer-hours {
+	flex: 2;
+}
+
+
+
+
+.store-hours-table table {
+  width: 90%;
+  border-collapse: collapse;
+  text-align: center;
+}
+
+.store-hours-table th,
+.store-hours-table td {
+  padding: 6px;
+  border: 0px solid #999;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  background-color: ;
+  color: #f8f9fa;
+}
+
+
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>📬 Mail System</h1>
-    <a class="btn" href="/client.html">Client Login</a>
-    <a class="btn" href="/register.html">Client Registration</a>
-    <a class="btn" href="/admin.html">Admin Portal</a>
-    <div class="footer">
-      &copy; 2025 Mail System. All rights reserved.
+  <div class="watermark"></div>
+
+  <div class="overlay">
+    <div class="header">
+      <a href="/admin.html" class="admin-link">admin</a>
     </div>
+
+    <div class="container">
+      <h1>Welcome to Easy Postal Services</h1>
+      <p>To set up an account, please visit us for service</p>
+      <a href="/client.html"><button class="login-button">Client Login</button></a>
+    </div>
+
+	<footer>
+	<div class="footer-section">
+		<h3>ADDRESS</h3>
+		<p>Easy Postal Services</p>
+		<p>731 State Route 9 NE 101</p>
+		<p>Lake Stevens, WA 98258</p>
+	</div>
+	<div class="footer-section">
+		<h3>CONTACT</h3>
+		<p>PH: 425-298-8006</p>
+		<p>FX: 425-842-0691</p>
+		<p>EM: easypostalservices@gmail.com</p>
+	</div>
+	<div class="footer-section footer-hours">
+  <h3>STORE HOURS</h3>
+  <div class="store-hours-table">
+    <table>
+      <thead>
+        <tr>
+          <th>Tue</th>
+          <th>Wed</th>
+          <th>Thu</th>
+          <th>Fri</th>
+          <th>Sat</th>
+          <th>Sun</th>
+          <th>Mon</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>9:00AM</td>
+          <td>9:00AM</td>
+          <td>9:00AM</td>
+          <td>9:00AM</td>
+          <td>10:00AM</td>
+          <td class="closed" rowspan="2">closed</td>
+          <td>9:00AM </td>
+        </tr>
+		<tr>
+          <td>7:00PM</td>
+          <td>7:00PM</td>
+          <td>7:00PM</td>
+          <td>7:00PM</td>
+          <td>2:00PM</td>
+          <td>7:00PM</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</footer>
   </div>
 </body>
 </html>
