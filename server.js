@@ -1,9 +1,11 @@
+
 require('dotenv').config();
 
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const nodemailer = require('nodemailer');
+const bcrypt = require('bcrypt');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -16,16 +18,14 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// 靜態資源目錄
+// 靜態資源與中介軟體設定
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // 初始化 SQLite 資料庫
 const db = new sqlite3.Database('./database.db');
-
 db.serialize(() => {
-  // 建立 clients 表
   db.run(`CREATE TABLE IF NOT EXISTS clients (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE,
@@ -38,7 +38,6 @@ db.serialize(() => {
     company_address TEXT
   )`);
 
-  // 建立 appointments 表
   db.run(`CREATE TABLE IF NOT EXISTS appointments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     service TEXT,
@@ -51,7 +50,7 @@ db.serialize(() => {
   )`);
 });
 
-// 註冊路由
+// 註冊新帳號
 app.post('/register', (req, res) => {
   const {
     username, password, repeat_password,
@@ -66,49 +65,62 @@ app.post('/register', (req, res) => {
     return res.send("<p style='color:red'>Passwords do not match</p><a href='/register.html'>Return</a>");
   }
 
-  const stmt = db.prepare(`
-    INSERT INTO clients (username, password, contact_name, contact_phone, contact_email, company_name, company_address)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `);
-  stmt.run(
-    username, password, contact_name, contact_phone, contact_email, company_name, company_address,
-    function (err) {
-      if (err) {
-        if (err.message.includes("UNIQUE constraint failed")) {
-          res.send("<p style='color:red'>Account already exists</p><a href='/register.html'>Return</a>");
+  bcrypt.hash(password, 10, (err, hashedPassword) => {
+    if (err) return res.send("Error encrypting password");
+
+    const stmt = db.prepare(`
+      INSERT INTO clients (username, password, contact_name, contact_phone, contact_email, company_name, company_address)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(
+      username, hashedPassword, contact_name, contact_phone, contact_email, company_name, company_address,
+      function (err) {
+        if (err) {
+          if (err.message.includes("UNIQUE constraint failed")) {
+            res.send("<p style='color:red'>Account already exists</p><a href='/register.html'>Return</a>");
+          } else {
+            console.error("Register error:", err);
+            res.send("<p style='color:red'>Registration failed, please try again</p><a href='/register.html'>Return</a>");
+          }
         } else {
-          console.error("Register error:", err);
-          res.send("<p style='color:red'>Registration failed, please try again</p><a href='/register.html'>Return</a>");
+          res.send(`<h2>Registration successful, welcome ${contact_name}!</h2><a href='/client.html'>Go to Login</a>`);
         }
-      } else {
-        res.send(`<h2>Registration successful, welcome ${contact_name}!</h2><a href='/client.html'>Go to Login</a>`);
       }
-    }
-  );
+    );
+  });
 });
 
-// 登入路由
+// 登入驗證
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
-
   if (!username || !password) {
     return res.status(400).send('Missing username or password');
   }
 
-  const stmt = db.prepare("SELECT * FROM clients WHERE username = ? AND password = ?");
-  stmt.get(username, password, (err, row) => {
+  const stmt = db.prepare("SELECT * FROM clients WHERE username = ?");
+  stmt.get(username, async (err, row) => {
     if (err) {
       console.error('DB error:', err);
       return res.status(500).send('Server error');
     }
 
-    if (row) {
-      res.redirect(`/client-dashboard.html?username=${encodeURIComponent(username)}`);
+    if (!row) {
+      return res.status(401).send('Invalid username or password');
+    }
+
+    const match = await bcrypt.compare(password, row.password); // bcrypt 驗證
+    if (match) {
+      if (username === 'jchung') {
+        return res.redirect('/admin-dashboard.html');
+      } else {
+        return res.redirect(`/client-dashboard.html?username=${encodeURIComponent(username)}`);
+      }
     } else {
-      res.status(401).send('Invalid username or password');
+      return res.status(401).send('Invalid username or password');
     }
   });
 });
+
 
 // 查詢信件數量
 app.get('/api/mailcount', (req, res) => {
@@ -117,17 +129,14 @@ app.get('/api/mailcount', (req, res) => {
 
   const stmt = db.prepare("SELECT mail_count FROM clients WHERE username = ?");
   stmt.get(username, (err, row) => {
-    if (err || !row) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    if (err || !row) return res.status(404).json({ error: "User not found" });
     res.json({ mail_count: row.mail_count });
   });
 });
 
-// appointment 提交
+// appointment 預約處理
 app.post('/api/appointment', (req, res) => {
   const { service, first_name, last_name, phone, email, date, time } = req.body;
-
   if (!first_name || !last_name || !phone || !email || !date || !time || !service) {
     return res.status(400).json({ error: "Missing required fields" });
   }
@@ -136,76 +145,53 @@ app.post('/api/appointment', (req, res) => {
     INSERT INTO appointments (service, first_name, last_name, phone, email, date, time)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
-
   stmt.run(service, first_name, last_name, phone, email, date, time, function (err) {
-    if (err) {
-      console.error("Insert appointment failed:", err.message);
-      return res.status(500).json({ error: err.message });
-    }
+    if (err) return res.status(500).json({ error: err.message });
 
     const customerFullName = `${first_name} ${last_name}`;
-
     const notifyMail = {
-      from: '"Easy Postal Services" <easymialtestuse@gmail.com>',
-      to: 'easymialtestuse@gmail.com',
+      from: '"Easy Postal Services" <' + process.env.EMAIL_USER + '>',
+      to: process.env.EMAIL_USER,
       subject: `📬 New Appointment - ${service}`,
-      text: `
-New appointment received:
-
-Service: ${service}
+      text: `Service: ${service}
 Customer: ${customerFullName}
 Phone: ${phone}
 Email: ${email}
 Date: ${date}
-Time: ${time}
-      `
+Time: ${time}`
     };
 
     const confirmMail = {
-      from: '"Easy Postal Services" <easymialtestuse@gmail.com>',
+      from: '"Easy Postal Services" <' + process.env.EMAIL_USER + '>',
       to: email,
       subject: 'Appointment Confirmation',
-      text: `
-Hi ${customerFullName},
+      text: `Hi ${customerFullName},
 
-Thank you for booking a service with Easy Postal Services.
+Thank you for booking a service.
 
 Service: ${service}
 Date: ${date}
 Time: ${time}
 
-We look forward to seeing you!
-
-Best regards,
-Easy Postal Services
-      `
+Easy Postal Services`
     };
 
-	transporter.sendMail(notifyMail, (err1, info1) => {
-		  if (err1) {
-			console.error("Notify email error:", err1.message);
-			return res.status(500).json({ success: false, error: 'Notify email failed: ' + err1.message });
-		  }
+    transporter.sendMail(notifyMail, (err1) => {
+      if (err1) return res.status(500).json({ success: false, error: 'Notify email failed: ' + err1.message });
 
-		  transporter.sendMail(confirmMail, (err2, info2) => {
-			if (err2) {
-			  console.error("Confirm email error:", err2.message);
-			  return res.status(500).json({ success: false, error: 'Confirm email failed: ' + err2.message });
-			}
+      transporter.sendMail(confirmMail, (err2) => {
+        if (err2) return res.status(500).json({ success: false, error: 'Confirm email failed: ' + err2.message });
 
-			res.json({ success: true, id: this.lastID });
-		  });
-		});
-	}); // <== 這是你漏掉的關閉大括號！
-});     // <== 這是 appointment 路由的結尾
+        res.json({ success: true, id: this.lastID });
+      });
+    });
+  });
+});
 
 // 取得所有預約
 app.get('/api/appointments', (req, res) => {
   db.all("SELECT * FROM appointments ORDER BY date DESC, time ASC", (err, rows) => {
-    if (err) {
-      console.error("Failed to fetch appointments:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
+    if (err) return res.status(500).json({ error: "Database error" });
     res.json(rows);
   });
 });
