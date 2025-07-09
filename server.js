@@ -144,7 +144,7 @@ app.post('/api/appointment', (req, res) => {
   stmt.run(service, first_name, last_name, phone, email, date, time, function (err) {
     if (err) {
       console.error("Insert appointment failed:", err.message);
-      return res.status(500).json({ error: 'Failed to save appointment' });
+      return res.status(500).json({ error: err.message });
     }
 
     const customerFullName = `${first_name} ${last_name}`;

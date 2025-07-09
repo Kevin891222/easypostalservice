@@ -114,25 +114,28 @@
         date: document.getElementById("calendar").value,
       };
 
-      fetch("/api/appointment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData)
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          alert("✅ Successfully submitted appointment!");
-          document.getElementById("appointmentForm").reset();
-        } else {
-          alert("❌ Submit failed: " + data.message);
-        }
-      })
-      .catch(err => {
-        console.error("Submit error", err);
-        alert("❌ Error occurred, please try again.");
-      });
-    });
+      fetch('/api/appointment', {
+		  method: 'POST',
+		  headers: {
+			'Content-Type': 'application/json'
+		  },
+		  body: JSON.stringify(payload)
+		})
+		.then(res => res.json())
+		.then(data => {
+		  if (data.success) {
+			alert("✅ Appointment submitted!");
+			form.reset();
+		  } else {
+			console.error("Server error:", data);
+			alert("❌ Submit failed: " + data.error);  // ✅ 顯示錯誤訊息
+		  }
+		})
+		.catch(err => {
+		  console.error("Fetch error:", err);
+		  alert("❌ Submit failed: " + err.message);
+		});
+
   </script>
 </body>
 </html>
