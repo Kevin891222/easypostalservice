@@ -92,50 +92,58 @@
     </form>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <script>
-    flatpickr("#calendar", {
-      altInput: true,
-      altFormat: "F j, Y",
-      dateFormat: "Y-m-d",
-      minDate: "today"
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+  flatpickr("#calendar", {
+  altInput: true,
+  altFormat: "F j, Y",
+  dateFormat: "Y-m-d",
+  minDate: "today",
+  disable: [
+    function(date) {
+      // 0 = Sunday
+      return date.getDay() === 0;
+    }
+  ]
+});
+
+  const form = document.getElementById("appointmentForm");
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    const formData = {
+      service: document.getElementById("service").value,
+      first_name: document.getElementById("firstName").value,
+      last_name: document.getElementById("lastName").value,
+      phone: document.getElementById("phone").value,
+      email: document.getElementById("email").value,
+      time: document.getElementById("time").value,
+      date: document.getElementById("calendar").value,
+    };
+
+    fetch('/api/appointment', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(formData)
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        alert("✅ Appointment submitted!");
+        form.reset();
+      } else {
+        console.error("Server error:", data);
+        alert("❌ Submit failed: " + data.error);
+      }
+    })
+    .catch(err => {
+      console.error("Fetch error:", err);
+      alert("❌ Submit failed: " + err.message);
     });
-
-    document.getElementById("appointmentForm").addEventListener("submit", function (e) {
-      e.preventDefault();
-
-      const formData = {
-        service: document.getElementById("service").value,
-        firstName: document.getElementById("firstName").value,
-        lastName: document.getElementById("lastName").value,
-        phone: document.getElementById("phone").value,
-        email: document.getElementById("email").value,
-        time: document.getElementById("time").value,
-        date: document.getElementById("calendar").value,
-      };
-
-      fetch('/api/appointment', {
-		  method: 'POST',
-		  headers: {
-			'Content-Type': 'application/json'
-		  },
-		  body: JSON.stringify(payload)
-		})
-		.then(res => res.json())
-		.then(data => {
-		  if (data.success) {
-			alert("✅ Appointment submitted!");
-			form.reset();
-		  } else {
-			console.error("Server error:", data);
-			alert("❌ Submit failed: " + data.error);  // ✅ 顯示錯誤訊息
-		  }
-		})
-		.catch(err => {
-		  console.error("Fetch error:", err);
-		  alert("❌ Submit failed: " + err.message);
-		});
-
-  </script>
+  });
+</script>
 </body>
 </html>
