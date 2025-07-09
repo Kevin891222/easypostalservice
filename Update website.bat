@@ -3,5 +3,7 @@ git add .
 git commit -m "Update homepage layout and store hours design"
 git push
 
-echo please wait few minutes before website been updated 
+echo please wait few minutes before website been updated
+
+start https://easypostervice.onrender.com/ 
 pause
