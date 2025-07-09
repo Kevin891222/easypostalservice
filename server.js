@@ -116,3 +116,26 @@ app.listen(PORT, () => {
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
+
+
+// POST /api/appointment - 接收預約資料
+app.post('/api/appointment', (req, res) => {
+  const { service, firstName, lastName, phone, email, time, date } = req.body;
+
+  if (!service || !firstName || !lastName || !phone || !email || !time || !date) {
+    return res.status(400).json({ success: false, message: "All fields required" });
+  }
+
+  const stmt = db.prepare(`
+    INSERT INTO appointments (service, first_name, last_name, phone, email, time, date)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  stmt.run(service, firstName, lastName, phone, email, time, date, function (err) {
+    if (err) {
+      console.error("Error inserting appointment:", err);
+      return res.status(500).json({ success: false, message: "Database error" });
+    }
+    res.json({ success: true, message: "Successfully submitted appointment" });
+  });
+});

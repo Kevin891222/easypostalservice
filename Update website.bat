@@ -5,5 +5,5 @@ git push
 
 echo please wait few minutes before website been updated
 
-start https://easypostervice.onrender.com/ 
+start https://mail-system-ur12.onrender.com/
 pause
