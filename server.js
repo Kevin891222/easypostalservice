@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
@@ -9,8 +11,8 @@ const PORT = process.env.PORT || 3000;
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: 'easymialtestuse@gmail.com',
-    pass: 'cackrxdylnfvgtmk'
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
   }
 });
 
@@ -179,17 +181,21 @@ Easy Postal Services
       `
     };
 
-    transporter.sendMail(notifyMail, (err1) => {
-      if (err1) console.error("Failed to send notify email:", err1.message);
+	transporter.sendMail(notifyMail, (err1, info1) => {
+	  if (err1) {
+		console.error("Notify email error:", err1.message);
+		return res.status(500).json({ success: false, error: 'Notify email failed: ' + err1.message });
+	  }
 
-      transporter.sendMail(confirmMail, (err2) => {
-        if (err2) console.error("Failed to send confirmation email:", err2.message);
+	  transporter.sendMail(confirmMail, (err2, info2) => {
+		if (err2) {
+		  console.error("Confirm email error:", err2.message);
+		  return res.status(500).json({ success: false, error: 'Confirm email failed: ' + err2.message });
+		}
 
-        res.json({ success: true, id: this.lastID });
-      });
-    });
-  });
-});
+		res.json({ success: true, id: this.lastID });
+	  });
+	});
 
 // 取得所有預約
 app.get('/api/appointments', (req, res) => {
