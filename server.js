@@ -1,9 +1,19 @@
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
-
+const nodemailer = require('nodemailer');
 const app = express();
 const PORT = 3000;
+
+// 設定 Gmail SMTP 寄信功能
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'easymialtestuse@gmail.com',
+    pass: 'cackrxdylnfvgtmk' 
+  }
+});
+
 
 // 靜態檔案目錄
 app.use(express.static(path.join(__dirname, 'public')));
@@ -120,22 +130,87 @@ app.get('/', (req, res) => {
 
 // POST /api/appointment - 接收預約資料
 app.post('/api/appointment', (req, res) => {
-  const { service, firstName, lastName, phone, email, time, date } = req.body;
+  const { service, first_name, last_name, phone, email, date, time } = req.body;
 
-  if (!service || !firstName || !lastName || !phone || !email || !time || !date) {
-    return res.status(400).json({ success: false, message: "All fields required" });
+  if (!first_name || !last_name || !phone || !email || !date || !time || !service) {
+    return res.status(400).json({ error: "Missing required fields" });
   }
 
   const stmt = db.prepare(`
-    INSERT INTO appointments (service, first_name, last_name, phone, email, time, date)
+    INSERT INTO appointments (service, first_name, last_name, phone, email, date, time)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
 
-  stmt.run(service, firstName, lastName, phone, email, time, date, function (err) {
+  stmt.run(service, first_name, last_name, phone, email, date, time, function (err) {
     if (err) {
-      console.error("Error inserting appointment:", err);
-      return res.status(500).json({ success: false, message: "Database error" });
+      console.error("Insert appointment failed:", err.message);
+      return res.status(500).json({ error: 'Failed to save appointment' });
     }
-    res.json({ success: true, message: "Successfully submitted appointment" });
+
+    const customerFullName = `${first_name} ${last_name}`;
+
+    // ✅ 1. 寄給老闆
+    const notifyMail = {
+      from: '"Easy Postal Services" <easymialtestuse@gmail.com>',
+      to: 'easymialtestuse@gmail.com',
+      subject: `📬 New Appointment - ${service}`,
+      text: `
+New appointment received:
+
+Service: ${service}
+Customer: ${customerFullName}
+Phone: ${phone}
+Email: ${email}
+Date: ${date}
+Time: ${time}
+      `
+    };
+
+    // ✅ 2. 寄給客戶
+    const confirmMail = {
+      from: '"Easy Postal Services" <easymialtestuse@gmail.com>',
+      to: email,
+      subject: 'Appointment Confirmation',
+      text: `
+Hi ${customerFullName},
+
+Thank you for booking a service with Easy Postal Services.
+
+Service: ${service}
+Date: ${date}
+Time: ${time}
+
+We look forward to seeing you!
+
+Best regards,
+Easy Postal Services
+      `
+    };
+
+    // 發送通知信 & 確認信
+    transporter.sendMail(notifyMail, (err1) => {
+      if (err1) {
+        console.error("Failed to send notify email:", err1.message);
+      }
+      transporter.sendMail(confirmMail, (err2) => {
+        if (err2) {
+          console.error("Failed to send confirmation email:", err2.message);
+        }
+
+        // 成功完成
+        res.json({ success: true, id: this.lastID });
+      });
+    });
+  });
+});
+
+
+app.get('/api/appointments', (req, res) => {
+  db.all("SELECT * FROM appointments ORDER BY date DESC, time ASC", (err, rows) => {
+    if (err) {
+      console.error("Failed to fetch appointments:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    res.json(rows);
   });
 });

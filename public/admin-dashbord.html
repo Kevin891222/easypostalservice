@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Dashboard - Appointments</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      background: #f2f2f2;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 30px;
+      background: white;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 12px 10px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #007BFF;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+  <h1>All Appointments</h1>
+  <table id="appointments-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Service</th>
+        <th>Name</th>
+        <th>Phone</th>
+        <th>Email</th>
+        <th>Date</th>
+        <th>Time</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Data will be inserted here -->
+    </tbody>
+  </table>
+
+  <div class="back-link">
+    <a href="/index.html">← Back to Homepage</a>
+  </div>
+
+  <script>
+    fetch('/api/appointments')
+      .then(res => res.json())
+      .then(data => {
+        const tableBody = document.querySelector('#appointments-table tbody');
+        if (Array.isArray(data)) {
+          data.forEach(appt => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${appt.id}</td>
+              <td>${appt.service}</td>
+              <td>${appt.first_name} ${appt.last_name}</td>
+              <td>${appt.phone}</td>
+              <td>${appt.email}</td>
+              <td>${appt.date}</td>
+              <td>${appt.time}</td>
+            `;
+            tableBody.appendChild(row);
+          });
+        }
+      })
+      .catch(err => {
+        console.error('Failed to fetch appointments:', err);
+      });
+  </script>
+</body>
+</html>
