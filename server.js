@@ -182,20 +182,22 @@ Easy Postal Services
     };
 
 	transporter.sendMail(notifyMail, (err1, info1) => {
-	  if (err1) {
-		console.error("Notify email error:", err1.message);
-		return res.status(500).json({ success: false, error: 'Notify email failed: ' + err1.message });
-	  }
+		  if (err1) {
+			console.error("Notify email error:", err1.message);
+			return res.status(500).json({ success: false, error: 'Notify email failed: ' + err1.message });
+		  }
 
-	  transporter.sendMail(confirmMail, (err2, info2) => {
-		if (err2) {
-		  console.error("Confirm email error:", err2.message);
-		  return res.status(500).json({ success: false, error: 'Confirm email failed: ' + err2.message });
-		}
+		  transporter.sendMail(confirmMail, (err2, info2) => {
+			if (err2) {
+			  console.error("Confirm email error:", err2.message);
+			  return res.status(500).json({ success: false, error: 'Confirm email failed: ' + err2.message });
+			}
 
-		res.json({ success: true, id: this.lastID });
-	  });
-	});
+			res.json({ success: true, id: this.lastID });
+		  });
+		});
+	}); // <== 這是你漏掉的關閉大括號！
+});     // <== 這是 appointment 路由的結尾
 
 // 取得所有預約
 app.get('/api/appointments', (req, res) => {
