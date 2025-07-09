@@ -1,4 +1,13 @@
 
+
+// server.js 最上方
+if (process.env.INIT_DB === 'true') {
+  require('./init_db');
+}
+
+
+
+
 require('dotenv').config();
 
 const express = require('express');
