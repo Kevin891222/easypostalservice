@@ -142,46 +142,48 @@ app.post('/api/appointment', (req, res) => {
     (service, first_name, last_name, phone, email, date, time) 
     VALUES (?, ?, ?, ?, ?, ?, ?)`
   );
-  stmt.run(service, first_name, last_name, phone, email, date, time, function (err) {
-    if (err) return res.status(500).json({ error: err.message });
+stmt.run(service, first_name, last_name, phone, email, date, time, function (err) {
+  if (err) return res.status(500).json({ error: err.message });
 
-    const customerName = `${first_name} ${last_name}`;
-    const logoUrl = "https://mail-system-ur12.onrender.com/image/logo.jpg";
+  const appointmentId = this.lastID; // ✅ 把 this.lastID 存下來
 
-    const notifyMail = {
-      from: `"Easy Postal Services" <${process.env.EMAIL_USER}>`,
-      to: process.env.EMAIL_USER,
-      subject: `📬 New Appointment - ${service}`,
-      html: `<div style="font-family: Arial;"><img src="${logoUrl}" style="max-width: 180px;" />
-        <h2>New Appointment</h2>
-        <p><b>Service:</b> ${service}</p><p><b>Name:</b> ${customerName}</p>
-        <p><b>Date:</b> ${date} ${time}</p><p><b>Email:</b> ${email}</p></div>`
-    };
+  const customerName = `${first_name} ${last_name}`;
+  const logoUrl = "https://mail-system-ur12.onrender.com/image/logo.jpg";
 
-    const confirmMail = {
-      from: `"Easy Postal Services" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: "Appointment Confirmation",
-      html: `<div style="font-family: Arial;"><img src="${logoUrl}" style="max-width: 180px;" />
-        <h2>Appointment Confirmed</h2>
-        <p>Hi ${customerName},</p><p>Thank you for booking:</p>
-        <p><b>Service:</b> ${service}</p><p><b>Date:</b> ${date}</p><p><b>Time:</b> ${time}</p></div>`
-    };
+  const notifyMail = {
+    from: `"Easy Postal Services" <${process.env.EMAIL_USER}>`,
+    to: process.env.EMAIL_USER,
+    subject: `📬 New Appointment - ${service}`,
+    html: `<div style="font-family: Arial;"><img src="${logoUrl}" style="max-width: 180px;" />
+      <h2>New Appointment</h2>
+      <p><b>Service:</b> ${service}</p><p><b>Name:</b> ${customerName}</p>
+      <p><b>Date:</b> ${date} ${time}</p><p><b>Email:</b> ${email}</p></div>`
+  };
 
-    transporter.sendMail(notifyMail, (err1) => {
-      if (err1) {
-        console.error("Notify email error:", err1);
-        return res.status(500).json({ success: false, error: "Failed to send notify email." });
+  const confirmMail = {
+    from: `"Easy Postal Services" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: "Appointment Confirmation",
+    html: `<div style="font-family: Arial;"><img src="${logoUrl}" style="max-width: 180px;" />
+      <h2>Appointment Confirmed</h2>
+      <p>Hi ${customerName},</p><p>Thank you for booking:</p>
+      <p><b>Service:</b> ${service}</p><p><b>Date:</b> ${date}</p><p><b>Time:</b> ${time}</p></div>`
+  };
+
+  transporter.sendMail(notifyMail, function (err1) {
+    if (err1) {
+      console.error("Notify email error:", err1);
+      return res.status(500).json({ success: false, error: "Failed to send notify email." });
+    }
+
+    transporter.sendMail(confirmMail, function (err2) {
+      if (err2) {
+        console.error("Confirm email error:", err2);
+        return res.status(500).json({ success: false, error: "Failed to send confirmation email." });
       }
 
-      transporter.sendMail(confirmMail, (err2) => {
-        if (err2) {
-          console.error("Confirm email error:", err2);
-          return res.status(500).json({ success: false, error: "Failed to send confirmation email." });
-        }
-
-        res.json({ success: true, id: this.lastID });
-      });
+      // ✅ 使用先前存下的 lastID
+      res.json({ success: true, id: appointmentId });
     });
   });
 });
