@@ -1,9 +1,9 @@
-require('dotenv').config();
-
 
 if (process.env.INIT_DB === 'true') {
   require('./init_db');
 }
+
+require('dotenv').config();
 
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
@@ -46,30 +46,6 @@ app.use(express.json());
 
 // 初始化 SQLite 資料庫
 const db = new sqlite3.Database('./database.db');
-db.serialize(() => {
-  db.run(`CREATE TABLE IF NOT EXISTS clients (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE,
-    password TEXT,
-    mail_count INTEGER DEFAULT 0,
-    contact_name TEXT,
-    contact_phone TEXT,
-    contact_email TEXT,
-    company_name TEXT,
-    company_address TEXT
-  )`);
-
-  db.run(`CREATE TABLE IF NOT EXISTS appointments (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    service TEXT,
-    first_name TEXT,
-    last_name TEXT,
-    phone TEXT,
-    email TEXT,
-    date TEXT,
-    time TEXT
-  )`);
-});
 
 // 註冊新帳號
 app.post('/register', (req, res) => {
