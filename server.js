@@ -138,6 +138,9 @@ app.get('/api/mailcount', (req, res) => {
   });
 });
 
+
+
+
 // appointment 預約處理
 app.post('/api/appointment', (req, res) => {
   const { service, first_name, last_name, phone, email, date, time } = req.body;
@@ -149,27 +152,51 @@ app.post('/api/appointment', (req, res) => {
     INSERT INTO appointments (service, first_name, last_name, phone, email, date, time)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
+
   stmt.run(service, first_name, last_name, phone, email, date, time, function (err) {
     if (err) return res.status(500).json({ error: err.message });
 
     const customerFullName = `${first_name} ${last_name}`;
+    const logoUrl = "https://mail-system-ur12.onrender.com/image/logo.jpg";
+
+    // ✅ 寄給老闆
     const notifyMail = {
-      from: '"Easy Postal Services" <' + process.env.EMAIL_USER + '>',
+      from: `"Easy Postal Services" <${process.env.EMAIL_USER}>`,
       to: process.env.EMAIL_USER,
       subject: `📬 New Appointment - ${service}`,
-      text: `Service: ${service}
+      text: `
+New appointment received:
+
+Service: ${service}
 Customer: ${customerFullName}
 Phone: ${phone}
 Email: ${email}
 Date: ${date}
-Time: ${time}`
+Time: ${time}
+
+Company Logo: ${logoUrl}
+      `,
+      html: `
+        <div style="font-family: Arial, sans-serif;">
+          <img src="${logoUrl}" alt="Company Logo" style="max-width: 180px;"><br>
+          <h2>📬 New Appointment Received</h2>
+          <p><strong>Service:</strong> ${service}</p>
+          <p><strong>Customer:</strong> ${customerFullName}</p>
+          <p><strong>Phone:</strong> ${phone}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Date:</strong> ${date}</p>
+          <p><strong>Time:</strong> ${time}</p>
+        </div>
+      `
     };
 
+    // ✅ 寄給客戶
     const confirmMail = {
-      from: '"Easy Postal Services" <' + process.env.EMAIL_USER + '>',
+      from: `"Easy Postal Services" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: 'Appointment Confirmation',
-      text: `Hi ${customerFullName},
+      text: `
+Hi ${customerFullName},
 
 Thank you for booking a service.
 
@@ -177,7 +204,24 @@ Service: ${service}
 Date: ${date}
 Time: ${time}
 
-Easy Postal Services`
+We look forward to seeing you.
+
+Easy Postal Services
+
+Logo: ${logoUrl}
+      `,
+      html: `
+        <div style="font-family: Arial, sans-serif;">
+          <img src="${logoUrl}" alt="Company Logo" style="max-width: 180px;"><br>
+          <h2>Appointment Confirmation</h2>
+          <p>Hi ${customerFullName},</p>
+          <p>Thank you for booking a service with <strong>Easy Postal Services</strong>.</p>
+          <p><strong>Service:</strong> ${service}</p>
+          <p><strong>Date:</strong> ${date}</p>
+          <p><strong>Time:</strong> ${time}</p>
+          <p>We look forward to seeing you!</p>
+        </div>
+      `
     };
 
     transporter.sendMail(notifyMail, (err1) => {
@@ -191,6 +235,10 @@ Easy Postal Services`
     });
   });
 });
+
+
+
+
 
 // 取得所有預約
 app.get('/api/appointments', (req, res) => {
