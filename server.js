@@ -187,6 +187,7 @@ stmt.run(service, first_name, last_name, phone, email, date, time, function (err
     });
   });
 });
+});
 
 // ✅ Admin: 取得所有預約
 app.get('/api/admin/appointments', isAdmin, (req, res) => {
