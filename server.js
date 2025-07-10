@@ -164,21 +164,23 @@ app.post('/api/appointment', (req, res) => {
         <p><b>Service:</b> ${service}</p><p><b>Date:</b> ${date}</p><p><b>Time:</b> ${time}</p></div>`
     };
 
-	transporter.sendMail(notifyMail, (err1) => {
-	  if (err1) {
-		console.error("Notify email error:", err1);
-		return res.status(500).json({ success: false, error: "Failed to send notify email." });
-	  }
+    transporter.sendMail(notifyMail, (err1) => {
+      if (err1) {
+        console.error("Notify email error:", err1);
+        return res.status(500).json({ success: false, error: "Failed to send notify email." });
+      }
 
-	  transporter.sendMail(confirmMail, (err2) => {
-		if (err2) {
-		  console.error("Confirm email error:", err2);
-		  return res.status(500).json({ success: false, error: "Failed to send confirmation email." });
-		}
+      transporter.sendMail(confirmMail, (err2) => {
+        if (err2) {
+          console.error("Confirm email error:", err2);
+          return res.status(500).json({ success: false, error: "Failed to send confirmation email." });
+        }
 
-		res.json({ success: true, id: this.lastID });
-	  });
-	});
+        res.json({ success: true, id: this.lastID });
+      });
+    });
+  });
+});
 
 // ✅ Admin: 取得所有預約
 app.get('/api/admin/appointments', isAdmin, (req, res) => {
