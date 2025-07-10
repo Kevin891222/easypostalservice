@@ -17,3 +17,8 @@
     "sqlite3": "^5.1.6"
   }
 }
+
+"scripts": {
+  "start": "node server.js",
+  "postinstall": "node init_db.js"
+}
