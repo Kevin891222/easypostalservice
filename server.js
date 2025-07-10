@@ -13,6 +13,23 @@ const bcrypt = require('bcrypt');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+
+
+const rateLimit = require('express-rate-limit');
+
+// 對 /api/appointment 限制每個 IP 每分鐘最多 5 次
+const appointmentLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 分鐘
+  max: 3,
+  message: 'Too many appointment requests, please try again later.'
+});
+
+app.use('/api/appointment', appointmentLimiter);
+
+
+
+
+
 // Gmail 寄信設定
 const transporter = nodemailer.createTransport({
   service: 'gmail',
