@@ -69,14 +69,15 @@ app.post('/register', (req, res) => {
   } = req.body;
 
   if (!username || !password || !repeat_password || !contact_name) {
-    return res.send("Missing required fields.");
+    return res.status(400).json({ success: false, error: "Missing required fields." });
   }
+
   if (password !== repeat_password) {
-    return res.send("Passwords do not match.");
+    return res.status(400).json({ success: false, error: "Passwords do not match." });
   }
 
   bcrypt.hash(password, 10, (err, hashedPassword) => {
-    if (err) return res.send("Error hashing password.");
+    if (err) return res.status(500).json({ success: false, error: "Error hashing password." });
 
     const stmt = db.prepare(
       `INSERT INTO clients 
@@ -87,14 +88,17 @@ app.post('/register', (req, res) => {
       username, hashedPassword, contact_name, contact_phone, contact_email, company_name, company_address,
       function (err) {
         if (err) {
-          if (err.message.includes('UNIQUE')) return res.send("Username already exists.");
-          return res.send("Registration failed.");
+          if (err.message.includes('UNIQUE')) {
+            return res.status(400).json({ success: false, error: "Username already exists." });
+          }
+          return res.status(500).json({ success: false, error: "Registration failed." });
         }
-        res.send("Registration successful.");
+        res.json({ success: true, message: "Registration successful." });
       }
     );
   });
 });
+
 
 // ➕ 登入
 app.post('/login', (req, res) => {
