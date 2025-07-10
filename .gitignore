@@ -1,4 +1,4 @@
 node_modules/
-database.db
+#database.db
 Update website.bat
 .env
