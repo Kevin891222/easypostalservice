@@ -4,6 +4,31 @@
   <meta charset="UTF-8" />
   <title>Admin Dashboard - Appointments</title>
   <style>
+  
+	
+	.register-link {
+	 position: absolute;
+	 top: 20px;
+	 right: 70px;
+
+	}
+	.register-link:hover {
+	  background-color: #87e2ef;
+	}
+	
+	.clients-informations {
+	 position: absolute;
+	 top: 20px;
+	 left: 70px;
+
+	}
+	.clients-informations:hover {
+	  background-color: #87e2ef;
+	}
+	
+	
+	
+	
     body {
       font-family: Arial, sans-serif;
       padding: 40px;
@@ -59,7 +84,9 @@
   </style>
 </head>
 <body>
-  <h1>All Appointments</h1>
+  <a href="/staffprotected/register.html" class="register-link">➕ Register New Account</a>
+  <a href="/staffprotected/clientsinfor.html" class="clients-informations">📄 View Clients</a>
+  <h1>Appointments</h1>
   <table id="appointments-table">
     <thead>
       <tr>

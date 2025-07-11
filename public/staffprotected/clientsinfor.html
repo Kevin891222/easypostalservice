@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Clients</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      background: #f9f9f9;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: white;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #007BFF;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f4f4f4;
+    }
+
+    .back-link {
+      margin-top: 30px;
+      text-align: center;
+    }
+
+    .save-btn {
+      background-color: #28a745;
+      color: white;
+      padding: 6px 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .save-btn:hover {
+      background-color: #218838;
+    }
+  </style>
+</head>
+<body>
+  <h1>Client's Information</h1>
+
+  <table id="clients-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Username</th>
+        <th>Role</th>
+        <th>Mail Count</th>
+        <th>Name</th>
+        <th>Phone</th>
+        <th>Email</th>
+        <th>Company</th>
+        <th>Address</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div class="back-link">
+    <a href="/adminprotected/admin-dashboard.html">← Back to Dashboard</a>
+  </div>
+
+  <script>
+    function createInput(value, field, id) {
+      return `<input type="text" value="${value || ''}" data-id="${id}" data-field="${field}" />`;
+    }
+
+    function loadClients() {
+      fetch('/api/admin/clients')
+        .then(res => res.json())
+        .then(data => {
+          const tbody = document.querySelector('#clients-table tbody');
+          tbody.innerHTML = '';
+          data.forEach(c => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${c.id}</td>
+              <td>${c.username}</td>
+              <td>${c.role}</td>
+              <td>${c.mail_count}</td>
+              <td>${createInput(c.contact_name, 'contact_name', c.id)}</td>
+              <td>${createInput(c.contact_phone, 'contact_phone', c.id)}</td>
+              <td>${createInput(c.contact_email, 'contact_email', c.id)}</td>
+              <td>${createInput(c.company_name, 'company_name', c.id)}</td>
+              <td>${createInput(c.company_address, 'company_address', c.id)}</td>
+              <td><button class="save-btn" onclick="saveClient(${c.id})">💾 Save</button></td>
+            `;
+            tbody.appendChild(row);
+          });
+        })
+        .catch(err => {
+          console.error('Error fetching clients:', err);
+        });
+    }
+
+    function saveClient(id) {
+      const inputs = document.querySelectorAll(`input[data-id="${id}"]`);
+      const updateData = {};
+
+      inputs.forEach(input => {
+        updateData[input.dataset.field] = input.value;
+      });
+
+      fetch(`/api/admin/clients/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData)
+      })
+      .then(res => res.json())
+      .then(result => {
+        if (result.success) {
+          alert("✅ Client updated successfully.");
+        } else {
+          alert("❌ Update failed.");
+        }
+      })
+      .catch(err => {
+        console.error("Update error:", err);
+        alert("❌ Server error.");
+      });
+    }
+
+    loadClients();
+  </script>
+</body>
+</html>
