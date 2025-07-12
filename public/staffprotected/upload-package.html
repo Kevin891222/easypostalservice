@@ -76,6 +76,7 @@
 
     <label for="image">Package Image</label>
     <input type="file" name="image" id="image" accept="image/*" required />
+	<img id="preview" style="max-width: 100%; margin-top: 10px; display: none;" />
 
     <label for="length_cm">Length (inch)</label>
     <input type="number" name="length_cm" step="0.1" />
@@ -121,6 +122,34 @@
         alert("❌ Server error while fetching username");
       }
     });
+
+
+	const imageInput = document.getElementById('image');
+	const preview = document.getElementById('preview');
+
+	imageInput.addEventListener('change', () => {
+	  const file = imageInput.files[0];
+	  if (file) {
+		const reader = new FileReader();
+		reader.onload = e => {
+		  preview.src = e.target.result;
+		  preview.style.display = 'block';
+		};
+		reader.readAsDataURL(file);
+	  } else {
+		preview.style.display = 'none';
+	  }
+	});
+
+
+	const uploadBtn = form.querySelector('button');
+	uploadBtn.disabled = true;
+	uploadBtn.textContent = 'Uploading...';
+	...
+	uploadBtn.disabled = false;
+	uploadBtn.textContent = '📤 Upload Package';
+
+
 
     // 上傳表單
     form.addEventListener('submit', async (e) => {

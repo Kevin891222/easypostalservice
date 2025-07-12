@@ -42,7 +42,7 @@ app.use('/api/appointment', appointmentLimiter);
 // ➕ 資料庫設定
 const clientsDB = new sqlite3.Database('./clients.db');
 const appointmentsDB = new sqlite3.Database('./appointments.db');
-
+const packagesDB = new sqlite3.Database('./packages.db');
 // ➕ Email 設定
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -280,8 +280,8 @@ app.post('/api/staff/upload-package', isStaff, upload.single('image'), (req, res
   const imageBuffer = req.file?.buffer;
   const imageType = req.file?.mimetype;
 
-  if (!mailbox_number || !imageBuffer || !username || !length_cm || !width_cm || !height_cm) {
-    return res.status(400).json({ success: false, error: "Missing required fields." });
+  if (!mailbox_number || !imageBuffer || !username) {
+  return res.status(400).json({ success: false, error: "Missing required fields." });
   }
 
   // ✅ 驗證 mailbox_number 是否為正整數
@@ -312,17 +312,24 @@ app.post('/api/staff/upload-package', isStaff, upload.single('image'), (req, res
   // 🗃️ 儲存至資料庫（相對路徑）
   const relativePath = path.relative(__dirname, fullPath).replace(/\\/g, '/');
 
-  const stmt = clientsDB.prepare(`
-    INSERT INTO packages (mailbox_number, image_path, length_cm, width_cm, height_cm)
+  const stmt = packagesDB.prepare(`
+    INSERT INTO packages (mailbox_number, image_path, length_inch, width_inch, height_inch, weight_pound)
     VALUES (?, ?, ?, ?, ?)
   `);
+
+	const safeParse = v => v ? parseFloat(v) : null;
+	const length = safeParse(length_inch);
+	const width  = safeParse(width_inch);
+	const height = safeParse(height_inch);
+	const weight = safeParse(weight_pound);
 
   stmt.run(
     parseInt(mailbox_number),
     relativePath,
-    parseFloat(length_cm),
-    parseFloat(width_cm),
-    parseFloat(height_cm),
+    parseFloat(length_inch),
+    parseFloat(width_inch),
+    parseFloat(height_inch),
+	parseFloat(weight_pound),
     function (err) {
       if (err) {
         console.error("Upload failed:", err);
