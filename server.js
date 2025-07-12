@@ -32,9 +32,9 @@ app.use(session({
 
 // ➕ 中介軟體
 app.use(express.static(path.join(__dirname, 'public')));
-app.use('/protected', express.static(path.join(__dirname, 'protected')));
-app.use('/adminprotected', express.static(path.join(__dirname, 'adminprotected')));
-app.use('/staffprotected', express.static(path.join(__dirname, 'staffprotected')));
+app.use('/protected', isAuthenticated, express.static(path.join(__dirname, 'protected')));
+app.use('/adminprotected', isAdmin, express.static(path.join(__dirname, 'adminprotected')));
+app.use('/staffprotected', isStaff, express.static(path.join(__dirname, 'staffprotected')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use('/api/appointment', appointmentLimiter);
