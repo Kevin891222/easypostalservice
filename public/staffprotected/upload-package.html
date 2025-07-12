@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Upload Package</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      background: #f2f2f2;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    form {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    input[readonly] {
+      background-color: #eee;
+    }
+
+    button {
+      background-color: #007BFF;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .back-link {
+      text-align: center;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Upload Package Information</h1>
+
+  <form id="packageForm" enctype="multipart/form-data">
+    <label for="mailbox_number">Mailbox Number</label>
+    <input type="number" name="mailbox_number" id="mailbox_number" min="1" step="1" required />
+
+    <label for="username">Username (auto-filled)</label>
+    <input type="text" name="username" id="username" readonly required />
+
+    <label for="image">Package Image</label>
+    <input type="file" name="image" id="image" accept="image/*" required />
+
+    <label for="length_cm">Length (inch)</label>
+    <input type="number" name="length_cm" step="0.1" />
+
+    <label for="width_cm">Width (inch)</label>
+    <input type="number" name="width_cm" step="0.1" />
+
+    <label for="height_cm">Height (inch)</label>
+    <input type="number" name="height_cm" step="0.1" />
+
+    <label for="weight_kg">Weight (pound)</label>
+    <input type="number" name="weight_kg" step="0.1" />
+
+    <button type="submit">📤 Upload Package</button>
+  </form>
+
+  <div class="back-link">
+    <a href="/staffprotected/staff-dashboard.html">← Back to Dashboard</a>
+  </div>
+
+  <script>
+    const form = document.getElementById('packageForm');
+    const mailboxInput = document.getElementById('mailbox_number');
+    const usernameInput = document.getElementById('username');
+
+    // 自動查找 username
+    mailboxInput.addEventListener('change', async () => {
+      const mailbox = mailboxInput.value;
+      if (!mailbox || mailbox <= 0) return;
+
+      try {
+        const res = await fetch(`/api/mailbox-to-username/${mailbox}`);
+        const result = await res.json();
+        if (res.ok) {
+          usernameInput.value = result.username;
+        } else {
+          usernameInput.value = '';
+          alert("❌ " + (result.error || "Username not found"));
+        }
+      } catch (err) {
+        usernameInput.value = '';
+        console.error(err);
+        alert("❌ Server error while fetching username");
+      }
+    });
+
+    // 上傳表單
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+
+      try {
+        const res = await fetch('/api/staff/upload-package', {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await res.json();
+        if (result.success) {
+          alert("✅ Package uploaded successfully!");
+          form.reset();
+          usernameInput.value = '';
+        } else {
+          alert("❌ Upload failed: " + (result.error || "Unknown error"));
+        }
+      } catch (err) {
+        console.error(err);
+        alert("❌ Server error.");
+      }
+    });
+  </script>
+</body>
+</html>

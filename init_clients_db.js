@@ -1,4 +1,3 @@
-// init_clients_db.js
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
 const db = new sqlite3.Database('./clients.db');
@@ -12,7 +11,7 @@ async function initializeClientsDatabase() {
 
   await new Promise((resolve, reject) => {
     db.run(`CREATE TABLE clients (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      mailbox_number INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE,
       password TEXT,
       role TEXT CHECK(role IN ('admin', 'staff', 'client')) DEFAULT 'client',
@@ -20,15 +19,14 @@ async function initializeClientsDatabase() {
       contact_name TEXT,
       contact_phone TEXT,
       contact_email TEXT,
-      company_name TEXT,
-      company_address TEXT
+      company_name TEXT
     )`, (err) => (err ? reject(err) : resolve()));
   });
 
   const stmt = db.prepare(`INSERT INTO clients 
-    (username, password, role, mail_count, contact_name, contact_phone, contact_email, company_name, company_address)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-  
+    (username, password, role, mail_count, contact_name, contact_phone, contact_email, company_name)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+
   // ➕ 建立 client 資料
   for (let i = 1; i <= 5; i++) {
     const hashedPassword = await bcrypt.hash(`pass${i}`, saltRounds);
@@ -40,18 +38,35 @@ async function initializeClientsDatabase() {
       `Client ${i}`,
       `12345678${i}`,
       `user${i}@mail.com`,
-      `Company ${i}`,
-      `Address ${i}`
+      `Company ${i}`
     );
   }
 
   // 🔐 admin
   const adminPwd = await bcrypt.hash("Jasper@9654", saltRounds);
-  stmt.run("jchung", adminPwd, 'admin', 0, "Admin", "0000000000", "admin@mail.com", "Easy Postal", "Admin HQ");
+  stmt.run(
+    "jchung",
+    adminPwd,
+    'admin',
+    0,
+    "Admin",
+    "0000000000",
+    "admin@mail.com",
+    "Easy Postal"
+  );
 
   // 👤 staff
   const staffPwd = await bcrypt.hash("Emily@jasper", saltRounds);
-  stmt.run("emsstaff", staffPwd, 'staff', 0, "Staff Member", "0999123456", "staff@mail.com", "Easy Postal", "Staff HQ");
+  stmt.run(
+    "emsstaff",
+    staffPwd,
+    'staff',
+    0,
+    "Staff Member",
+    "0999123456",
+    "staff@mail.com",
+    "Easy Postal"
+  );
 
   stmt.finalize(() => {
     console.log("✅ Clients created successfully.");

@@ -61,7 +61,7 @@
   <table id="clients-table">
     <thead>
       <tr>
-        <th>ID</th>
+        <th>Mailbox Number</th>
         <th>Username</th>
         <th>Role</th>
         <th>Mail Count</th>
@@ -69,7 +69,6 @@
         <th>Phone</th>
         <th>Email</th>
         <th>Company</th>
-        <th>Address</th>
         <th>Action</th>
       </tr>
     </thead>
@@ -94,16 +93,15 @@
           data.forEach(c => {
             const row = document.createElement('tr');
             row.innerHTML = `
-              <td>${c.id}</td>
+              <td>${c.mailbox_number}</td>
               <td>${c.username}</td>
               <td>${c.role}</td>
               <td>${c.mail_count}</td>
-              <td>${createInput(c.contact_name, 'contact_name', c.id)}</td>
-              <td>${createInput(c.contact_phone, 'contact_phone', c.id)}</td>
-              <td>${createInput(c.contact_email, 'contact_email', c.id)}</td>
-              <td>${createInput(c.company_name, 'company_name', c.id)}</td>
-              <td>${createInput(c.company_address, 'company_address', c.id)}</td>
-              <td><button class="save-btn" onclick="saveClient(${c.id})">💾 Save</button></td>
+              <td>${createInput(c.contact_name, 'contact_name', c.mailbox_number)}</td>
+              <td>${createInput(c.contact_phone, 'contact_phone', c.mailbox_number)}</td>
+              <td>${createInput(c.contact_email, 'contact_email', c.mailbox_number)}</td>
+              <td>${createInput(c.company_name, 'company_name', c.mailbox_number)}</td>
+              <td><button class="save-btn" onclick="saveClient(${c.mailbox_number})">💾 Save</button></td>
             `;
             tbody.appendChild(row);
           });
