@@ -15,10 +15,11 @@ const PORT = process.env.PORT || 3000;
 
 app.set('trust proxy', 1);
 
+
 // ➕ Rate limit for booking
 const appointmentLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 3,
+  max: 2,
   message: 'Too many appointment requests, please try again later.'
 });
 
@@ -26,8 +27,13 @@ const appointmentLimiter = rateLimit({
 app.use(session({
   secret: process.env.SESSION_SECRET || 'supersecretkey',
   resave: false,
-  saveUninitialized: true,
-  cookie: { httpOnly: true, secure: false }
+  saveUninitialized: false,
+  rolling: true, // 每次互動刷新時效
+  cookie: {
+    httpOnly: true,
+    secure: false, // 記得部署到 HTTPS 時要改成 true
+    maxAge: 30 * 60 * 1000 // 30分鐘
+  }
 }));
 
 // ➕ 中介軟體
