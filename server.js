@@ -257,15 +257,14 @@ app.get('/api/admin/clients', isStaff, (req, res) => {
 const fs = require('fs');
 
 // ✅ 允許的圖片格式與副檔名
-const allowedImageTypes = [
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
+const allowedFileTypes = [
+  'image/jpeg', 'image/jpg', 'image/png', 'application/pdf'
 ];
 const mimeToExt = {
   'image/jpeg': '.jpeg',
   'image/jpg': '.jpg',
   'image/png': '.png',
+  'application/pdf': '.pdf'
 };
 
 // 🧱 建立根資料夾
@@ -275,67 +274,79 @@ if (!fs.existsSync(baseDir)) fs.mkdirSync(baseDir);
 // 🔧 Multer 設定
 const storage = multer.memoryStorage();
 
-app.post('/api/staff/upload-package', isStaff, upload.single('image'), (req, res) => {
-  const { mailbox_number, length_cm, width_cm, height_cm, username } = req.body;
-  const imageBuffer = req.file?.buffer;
-  const imageType = req.file?.mimetype;
+app.post('/api/staff/upload-package', isStaff, upload.fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'pdf', maxCount: 1 }
+]), (req, res) => {
+  const { mailbox_number, length_inch, width_inch, height_inch, weight_pound, username } = req.body;
 
-  if (!mailbox_number || !imageBuffer || !username) {
-  return res.status(400).json({ success: false, error: "Missing required fields." });
+  const imageFile = req.files?.image?.[0];
+  const pdfFile = req.files?.pdf?.[0];
+
+  if (!mailbox_number || !username || !imageFile) {
+    return res.status(400).json({ success: false, error: "Missing required fields (mailbox number, username, image)." });
   }
 
-  // ✅ 驗證 mailbox_number 是否為正整數
   if (!/^[1-9]\d*$/.test(mailbox_number)) {
     return res.status(400).json({ success: false, error: "Mailbox number must be a positive integer." });
   }
 
-  // ✅ 驗證圖片格式
-  if (!allowedImageTypes.includes(imageType)) {
-    return res.status(400).json({ success: false, error: "Unsupported image format." });
-  }
-
-  const extension = mimeToExt[imageType] || '.jpg';
-
-  // 📁 建立 mailbox_number 資料夾
+  // 建立對應資料夾
   const folderPath = path.join(baseDir, mailbox_number);
   if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
 
-  // 🔍 計算同 username 已有幾張圖片
-  const existingFiles = fs.readdirSync(folderPath).filter(file => file.startsWith(username + '_'));
-  const nextIndex = existingFiles.length + 1;
-  const fileName = `${username}_${nextIndex}${extension}`;
-  const fullPath = path.join(folderPath, fileName);
+  const safeParse = v => v ? parseFloat(v) : null;
+  const length = safeParse(length_inch);
+  const width = safeParse(width_inch);
+  const height = safeParse(height_inch);
+  const weight = safeParse(weight_pound);
 
-  // 📥 寫入圖片檔案
-  fs.writeFileSync(fullPath, imageBuffer);
+  // 處理檔案儲存邏輯（支援 image 與 pdf）
+  const saveFile = (file, index) => {
+    const fileType = file.mimetype;
+    if (!allowedFileTypes.includes(fileType)) {
+      throw new Error(`Unsupported file type: ${fileType}`);
+    }
 
-  // 🗃️ 儲存至資料庫（相對路徑）
-  const relativePath = path.relative(__dirname, fullPath).replace(/\\/g, '/');
+    const ext = mimeToExt[fileType] || '.bin';
+    const existingFiles = fs.readdirSync(folderPath).filter(f => f.startsWith(username + '_'));
+    const fileName = `${username}_${existingFiles.length + index}${ext}`;
+    const fullPath = path.join(folderPath, fileName);
+    fs.writeFileSync(fullPath, file.buffer);
+    return path.relative(__dirname, fullPath).replace(/\\/g, '/');
+  };
 
+  let image_path = null;
+  let pdf_path = null;
+
+  try {
+    image_path = saveFile(imageFile, 1);
+    if (pdfFile) pdf_path = saveFile(pdfFile, 2);
+  } catch (err) {
+    console.error("File save error:", err);
+    return res.status(400).json({ success: false, error: err.message });
+  }
+
+  // 儲存資料到 DB
   const stmt = packagesDB.prepare(`
-    INSERT INTO packages (mailbox_number, image_path, length_inch, width_inch, height_inch, weight_pound)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO packages (mailbox_number, image_path, pdf_path, length_inch, width_inch, height_inch, weight_pound)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
-
-	const safeParse = v => v ? parseFloat(v) : null;
-	const length = safeParse(length_inch);
-	const width  = safeParse(width_inch);
-	const height = safeParse(height_inch);
-	const weight = safeParse(weight_pound);
 
   stmt.run(
     parseInt(mailbox_number),
-    relativePath,
-    parseFloat(length_inch),
-    parseFloat(width_inch),
-    parseFloat(height_inch),
-	parseFloat(weight_pound),
+    image_path,
+    pdf_path,
+    length,
+    width,
+    height,
+    weight,
     function (err) {
       if (err) {
-        console.error("Upload failed:", err);
+        console.error("DB insert failed:", err);
         return res.status(500).json({ success: false, error: "Database insert failed." });
       }
-      res.json({ success: true, id: this.lastID, image_path: relativePath });
+      res.json({ success: true, id: this.lastID, image_path, pdf_path });
     }
   );
 });

@@ -12,6 +12,23 @@
 
     h1 {
       text-align: center;
+      color: #333;
+      display: inline-block;
+      margin-right: 20px;
+    }
+
+    .toggle-detail-btn {
+      background-color: #6c757d;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .toggle-detail-btn:hover {
+      background-color: #5a6268;
     }
 
     table {
@@ -19,21 +36,78 @@
       border-collapse: collapse;
       margin-top: 20px;
       background: white;
+      table-layout: fixed;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
     th, td {
       border: 1px solid #ccc;
-      padding: 10px;
+      padding: 12px 10px;
       text-align: center;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      transition: all 0.3s ease;
     }
 
     th {
       background-color: #007BFF;
       color: white;
+      font-weight: bold;
     }
 
     tr:nth-child(even) {
       background-color: #f4f4f4;
+    }
+
+    th:nth-child(1) { width: 90px; }
+    th:nth-child(2), th:nth-child(3) { width: 150px; }
+    th:nth-child(4) { width: 100px; }
+    th:nth-child(5), th:nth-child(6) { width: 180px; }
+
+    .email-th, .phone-th,
+    .email, .phone {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .hidden-col {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      width: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+    }
+
+    .editable input {
+      width: 100%;
+      padding: 6px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .edit-btn {
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .edit-btn:hover {
+      background-color: #0056b3;
+    }
+
+    a {
+      text-decoration: none;
+      color: #007BFF;
+    }
+
+    a:hover {
+      text-decoration: underline;
     }
 
     .back-link {
@@ -41,34 +115,39 @@
       text-align: center;
     }
 
-    .save-btn {
-      background-color: #28a745;
-      color: white;
-      padding: 6px 10px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
+    .back-link a {
+      color: #007BFF;
+      text-decoration: none;
+      font-weight: bold;
     }
 
-    .save-btn:hover {
-      background-color: #218838;
+    .back-link a:hover {
+      text-decoration: underline;
+    }
+
+    .header-container {
+      text-align: center;
+      margin-bottom: -10px;
     }
   </style>
 </head>
 <body>
-  <h1>Client's Information</h1>
+
+  <div class="header-container">
+    <h1>Client's Information</h1>
+    <button class="toggle-detail-btn" onclick="toggleDetails()">👁️ Detail</button>
+  </div>
 
   <table id="clients-table">
     <thead>
       <tr>
         <th>Mailbox Number</th>
-        <th>Username</th>
-        <th>Role</th>
-        <th>Mail Count</th>
         <th>Name</th>
-        <th>Phone</th>
-        <th>Email</th>
         <th>Company</th>
+        <th>Mail Count</th>
+        <th class="email-th hidden-col">Email</th>
+        <th class="phone-th hidden-col">Phone</th>
+        <th>Upload</th>
         <th>Action</th>
       </tr>
     </thead>
@@ -80,8 +159,21 @@
   </div>
 
   <script>
-    function createInput(value, field, id) {
-      return `<input type="text" value="${value || ''}" data-id="${id}" data-field="${field}" />`;
+    let detailVisible = false;
+
+    function toggleDetails() {
+      detailVisible = !detailVisible;
+
+      document.querySelectorAll('.email-th, .phone-th').forEach(th => {
+        th.classList.toggle('hidden-col', !detailVisible);
+      });
+
+      document.querySelectorAll('.email, .phone').forEach(td => {
+        td.classList.toggle('hidden-col', !detailVisible);
+      });
+
+      const btn = document.querySelector('.toggle-detail-btn');
+      btn.textContent = detailVisible ? '	Hide' : 'Detail';
     }
 
     function loadClients() {
@@ -90,52 +182,63 @@
         .then(data => {
           const tbody = document.querySelector('#clients-table tbody');
           tbody.innerHTML = '';
+
           data.forEach(c => {
             const row = document.createElement('tr');
+            row.setAttribute('data-id', c.mailbox_number);
             row.innerHTML = `
               <td>${c.mailbox_number}</td>
-              <td>${c.username}</td>
-              <td>${c.role}</td>
+              <td class="editable" data-field="contact_name">${c.contact_name || ''}</td>
+              <td class="editable" data-field="company_name">${c.company_name || ''}</td>
               <td>${c.mail_count}</td>
-              <td>${createInput(c.contact_name, 'contact_name', c.mailbox_number)}</td>
-              <td>${createInput(c.contact_phone, 'contact_phone', c.mailbox_number)}</td>
-              <td>${createInput(c.contact_email, 'contact_email', c.mailbox_number)}</td>
-              <td>${createInput(c.company_name, 'company_name', c.mailbox_number)}</td>
-              <td><button class="save-btn" onclick="saveClient(${c.mailbox_number})">💾 Save</button></td>
+              <td class="editable email ${detailVisible ? '' : 'hidden-col'}" data-field="contact_email">${c.contact_email || ''}</td>
+              <td class="editable phone ${detailVisible ? '' : 'hidden-col'}" data-field="contact_phone">${c.contact_phone || ''}</td>
+              <td><a href="/staffprotected/upload-package.html?mailbox=${c.mailbox_number}">📦 Upload</a></td>
+              <td><button class="edit-btn" onclick="toggleEdit(${c.mailbox_number}, this)">✏️ Edit</button></td>
             `;
             tbody.appendChild(row);
           });
-        })
-        .catch(err => {
-          console.error('Error fetching clients:', err);
         });
     }
 
-    function saveClient(id) {
-      const inputs = document.querySelectorAll(`input[data-id="${id}"]`);
-      const updateData = {};
+    function toggleEdit(id, btn) {
+      const row = document.querySelector(`tr[data-id="${id}"]`);
+      const isEditing = btn.textContent.includes('Save');
+      const fields = row.querySelectorAll('.editable');
 
-      inputs.forEach(input => {
-        updateData[input.dataset.field] = input.value;
-      });
+      if (!isEditing) {
+        fields.forEach(cell => {
+          const field = cell.getAttribute('data-field');
+          const value = cell.textContent.trim();
+          cell.innerHTML = `<input type="text" name="${field}" value="${value}" />`;
+        });
+        btn.textContent = '💾 Save';
+      } else {
+        const updateData = {};
+        fields.forEach(cell => {
+          const input = cell.querySelector('input');
+          const field = input.name;
+          const value = input.value.trim();
+          updateData[field] = value;
+          cell.innerHTML = value;
+        });
 
-      fetch(`/api/admin/clients/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updateData)
-      })
-      .then(res => res.json())
-      .then(result => {
-        if (result.success) {
-          alert("✅ Client updated successfully.");
-        } else {
-          alert("❌ Update failed.");
-        }
-      })
-      .catch(err => {
-        console.error("Update error:", err);
-        alert("❌ Server error.");
-      });
+        fetch(`/api/admin/clients/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updateData)
+        })
+        .then(res => res.json())
+        .then(result => {
+          if (!result.success) alert("❌ Update failed");
+        })
+        .catch(err => {
+          console.error("❌ Server error:", err);
+          alert("❌ Server error");
+        });
+
+        btn.textContent = '✏️ Edit';
+      }
     }
 
     loadClients();

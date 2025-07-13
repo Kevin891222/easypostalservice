@@ -67,114 +67,122 @@
 
   <h1>Upload Package Information</h1>
 
-  <form id="packageForm" enctype="multipart/form-data">
-    <label for="mailbox_number">Mailbox Number</label>
-    <input type="number" name="mailbox_number" id="mailbox_number" min="1" step="1" required />
+<form id="packageForm" enctype="multipart/form-data">
+  <label for="mailbox_number">Mailbox Number</label>
+  <input type="number" name="mailbox_number" id="mailbox_number" min="1" step="1" required />
 
-    <label for="username">Username (auto-filled)</label>
-    <input type="text" name="username" id="username" readonly required />
+  <label for="username">Username</label>
+  <input type="text" name="username" id="username" readonly required />
 
-    <label for="image">Package Image</label>
-    <input type="file" name="image" id="image" accept="image/*" required />
-	<img id="preview" style="max-width: 100%; margin-top: 10px; display: none;" />
+  <label for="image">📷 Package Image</label>
+  <input type="file" name="image" id="image" accept="image/*" required />
+  <img id="preview" style="max-width: 100%; margin-top: 10px; display: none;" />
 
-    <label for="length_cm">Length (inch)</label>
-    <input type="number" name="length_cm" step="0.1" />
+  <label for="pdf">📄 PDF (optional)</label>
+  <input type="file" name="pdf" id="pdf" accept="application/pdf" />
 
-    <label for="width_cm">Width (inch)</label>
-    <input type="number" name="width_cm" step="0.1" />
+  <label for="length_inch">Length (inch)</label>
+  <input type="number" name="length_inch" step="0.1" />
 
-    <label for="height_cm">Height (inch)</label>
-    <input type="number" name="height_cm" step="0.1" />
+  <label for="width_inch">Width (inch)</label>
+  <input type="number" name="width_inch" step="0.1" />
 
-    <label for="weight_kg">Weight (pound)</label>
-    <input type="number" name="weight_kg" step="0.1" />
+  <label for="height_inch">Height (inch)</label>
+  <input type="number" name="height_inch" step="0.1" />
 
-    <button type="submit">📤 Upload Package</button>
-  </form>
+  <label for="weight_pound">Weight (pound)</label>
+  <input type="number" name="weight_pound" step="0.1" />
 
-  <div class="back-link">
-    <a href="/staffprotected/staff-dashboard.html">← Back to Dashboard</a>
-  </div>
+  <button type="submit" id="uploadBtn">📤 Upload Package</button>
+</form>
 
-  <script>
-    const form = document.getElementById('packageForm');
-    const mailboxInput = document.getElementById('mailbox_number');
-    const usernameInput = document.getElementById('username');
+<div class="back-link">
+  <a href="/staffprotected/staff-dashboard.html">← Back to Dashboard</a>
+</div>
 
-    // 自動查找 username
-    mailboxInput.addEventListener('change', async () => {
-      const mailbox = mailboxInput.value;
-      if (!mailbox || mailbox <= 0) return;
+<script>
+  const form = document.getElementById('packageForm');
+  const mailboxInput = document.getElementById('mailbox_number');
+  const usernameInput = document.getElementById('username');
+  const imageInput = document.getElementById('image');
+  const preview = document.getElementById('preview');
+  const uploadBtn = document.getElementById('uploadBtn');
 
-      try {
-        const res = await fetch(`/api/mailbox-to-username/${mailbox}`);
-        const result = await res.json();
-        if (res.ok) {
-          usernameInput.value = result.username;
-        } else {
-          usernameInput.value = '';
-          alert("❌ " + (result.error || "Username not found"));
-        }
-      } catch (err) {
+  const urlParams = new URLSearchParams(window.location.search);
+  const mailboxValue = urlParams.get('mailbox');
+  if (mailboxValue) {
+    document.getElementById('mailbox_number').value = mailboxValue;
+    // 自動觸發查找 username
+    document.getElementById('mailbox_number').dispatchEvent(new Event('change'));
+  }
+
+  // 📦 自動帶出 username
+  mailboxInput.addEventListener('change', async () => {
+    const mailbox = mailboxInput.value;
+    if (!mailbox || mailbox <= 0) return;
+
+    try {
+      const res = await fetch(`/api/mailbox-to-username/${mailbox}`);
+      const result = await res.json();
+      if (res.ok) {
+        usernameInput.value = result.username;
+      } else {
         usernameInput.value = '';
-        console.error(err);
-        alert("❌ Server error while fetching username");
+        alert("❌ " + (result.error || "Username not found"));
       }
-    });
+    } catch (err) {
+      usernameInput.value = '';
+      console.error(err);
+      alert("❌ Server error while fetching username");
+    }
+  });
 
+  // 🖼️ 預覽圖片（不預覽 PDF）
+  imageInput.addEventListener('change', () => {
+    const file = imageInput.files[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    } else {
+      preview.style.display = 'none';
+    }
+  });
 
-	const imageInput = document.getElementById('image');
-	const preview = document.getElementById('preview');
+  // 🚀 表單送出
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    uploadBtn.disabled = true;
+    uploadBtn.textContent = 'Uploading...';
 
-	imageInput.addEventListener('change', () => {
-	  const file = imageInput.files[0];
-	  if (file) {
-		const reader = new FileReader();
-		reader.onload = e => {
-		  preview.src = e.target.result;
-		  preview.style.display = 'block';
-		};
-		reader.readAsDataURL(file);
-	  } else {
-		preview.style.display = 'none';
-	  }
-	});
+    const formData = new FormData(form);
 
+    try {
+      const res = await fetch('/api/staff/upload-package', {
+        method: 'POST',
+        body: formData
+      });
 
-	const uploadBtn = form.querySelector('button');
-	uploadBtn.disabled = true;
-	uploadBtn.textContent = 'Uploading...';
-	...
-	uploadBtn.disabled = false;
-	uploadBtn.textContent = '📤 Upload Package';
-
-
-
-    // 上傳表單
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const formData = new FormData(form);
-
-      try {
-        const res = await fetch('/api/staff/upload-package', {
-          method: 'POST',
-          body: formData
-        });
-
-        const result = await res.json();
-        if (result.success) {
-          alert("✅ Package uploaded successfully!");
-          form.reset();
-          usernameInput.value = '';
-        } else {
-          alert("❌ Upload failed: " + (result.error || "Unknown error"));
-        }
-      } catch (err) {
-        console.error(err);
-        alert("❌ Server error.");
+      const result = await res.json();
+      if (result.success) {
+        alert("✅ Package uploaded successfully!");
+        form.reset();
+        preview.style.display = 'none';
+        usernameInput.value = '';
+      } else {
+        alert("❌ Upload failed: " + (result.error || "Unknown error"));
       }
-    });
-  </script>
+    } catch (err) {
+      console.error(err);
+      alert("❌ Server error.");
+    }
+
+    uploadBtn.disabled = false;
+    uploadBtn.textContent = '📤 Upload Package';
+  });
+</script>
 </body>
 </html>
